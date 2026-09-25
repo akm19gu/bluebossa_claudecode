@@ -1,15 +1,9 @@
 // Boot, frame rendering (shutter-accumulated), and a scrub preview.
 'use strict';
 
-const SUBFRAMES = 5;   // motion-blur samples per frame
-const SUBFRAMES_FAST = 14; // during whips, wipes and collapses, so the blur reads as a streak
-const SHUTTER = 0.5;   // 180° shutter
-
-function fastMotion(t) {
-  const w = [[TL.drums - 0.15, TL.drums + 0.3], [TL.B2 - 0.3, TL.B2 + 0.5], [TL.B3 - 0.45, TL.B3 + 0.12],
-    [TL.beat(10) - 0.02, TL.beat(10) + 0.5], [TL.B4 - 0.02, TL.B4 + 0.35], [TL.B5 - 0.75, TL.B5 + 0.6]];
-  return w.some(([a, b]) => t >= a && t < b);
-}
+const SUBFRAMES = 5;       // motion-blur samples per frame
+const SUBFRAMES_FAST = 14; // during fast moves (see fastMotion in scenes.js)
+const SHUTTER = 0.5;       // 180° shutter
 
 const out = document.getElementById('out');
 const scene = makeCanvas(W, H), sctx = scene.getContext('2d', { willReadFrequently: false });
@@ -27,20 +21,14 @@ async function boot() {
   ]);
   initTimeline(tm);
   A.meta = meta;
-  const names = { logo: 'logo2x', unlit: 'logo_unlit', letters: 'letters', layerMid: 'layer_mid', layerKeys: 'layer_keys' };
+  const names = { unlit: 'logo_unlit', letters: 'letters', layerMid: 'layer_mid', layerKeys: 'layer_keys' };
   await Promise.all(Object.entries(names).map(async ([k, f]) => { A[k] = await loadImage(`assets/${f}.png`); }));
-  const fonts = ['400 64px Cinzel', '600 20px Cinzel', '700 100px Cinzel', '900 100px Cinzel',
-    'italic 500 100px "Cormorant Garamond"', '600 100px "Cormorant Garamond"', 'italic 600 100px "Cormorant Garamond"', 'italic 400 100px "Cormorant Garamond"',
-    '400 20px "JetBrains Mono"', '600 20px "JetBrains Mono"', '400 100px Anton',
-    '500 40px "Noto Serif JP"'];
-  await Promise.all(fonts.map(f => document.fonts.load(f, f.includes('Noto') ? '秋う' : 'Aa0')));
+  const fonts = ['300 100px Inter', '400 20px Inter', '500 20px Inter', '600 100px Inter',
+    '500 100px "Cormorant Garamond"', 'italic 500 100px "Cormorant Garamond"',
+    '400 20px "JetBrains Mono"', '500 20px "JetBrains Mono"', '500 20px "Noto Sans JP"'];
+  await Promise.all(fonts.map(f => document.fonts.load(f, f.includes('Noto') ? '秋う' : 'Aa0♭')));
   await document.fonts.ready;
 
-  // Gold numerals, textured with the logo's own leaf.
-  // texture: a run of the painting's gold strip (brushed leaf, horizontal grain)
-  const tex = { img: A.logo, sx: 300, sy: 1070, sw: 900, sh: 76 };
-  A.g2 = goldGlyph('2', '700 900px Cinzel', 900, { letterTex: tex });
-  A.g5 = goldGlyph('5', '700 900px Cinzel', 900, { letterTex: tex });
   // Lettering band of the painting as a mask for the specular sweep.
   const gs = Object.values(meta.glyphs);
   const bx = Math.min(...gs.map(g => g.x0)) - 10, by = Math.min(...gs.map(g => g.y0)) - 10;

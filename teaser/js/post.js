@@ -34,7 +34,7 @@ class Post {
           o = vec4(s/12., 1.); }`),
       final: this.prog(vs, hdr + `
         uniform sampler2D scene, bloom, hud;
-        uniform vec2 res; uniform float seed, bloomAmt, ca, vig, grain, expo, warp, sat;
+        uniform vec2 res; uniform float seed, bloomAmt, ca, vig, grain, expo, warp, sat, tone;
         uniform vec3 lift, gain, tint;
         float hash(vec2 p){ p = fract(p*vec2(443.897,441.423)); p += dot(p, p.yx+19.19); return fract((p.x+p.y)*p.x); }
         void main(){
@@ -48,7 +48,7 @@ class Post {
           b.r = texture(bloom, wuv-off*1.6).r; b.g = texture(bloom, wuv).g; b.b = texture(bloom, wuv+off*1.6).b;
           c += b*bloomAmt;
           c *= expo;
-          c = c*(1.+c/2.2)/(1.+c);                 // soft shoulder
+          c = mix(c, c*(1.+c/2.2)/(1.+c), tone);    // optional soft shoulder
           c = pow(c, vec3(1./2.2));
           c = clamp(c*gain + lift*(1.-c), 0., 1.) * tint;
           float lum = dot(c, vec3(.299,.587,.114));
@@ -147,6 +147,15 @@ class Post {
     gl.disable(gl.BLEND);
   }
   finish(hudCanvas, P) {
+    const L = this.levels;
+    if (P.bloom > 0) this.bloom(P);
+    this.upload(this.hudTex, hudCanvas, true);
+    this.pass(this.progs.final, null, {
+      res: [this.w, this.h], seed: P.seed, bloomAmt: P.bloom, ca: P.ca, vig: P.vig, grain: P.grain,
+      expo: P.expo, warp: P.warp, sat: P.sat, tone: P.tone, lift: P.lift, gain: P.gain, tint: P.tint,
+    }, { scene: this.accum.t, bloom: L[0].t, hud: this.hudTex });
+  }
+  bloom(P) {
     const gl = this.gl, L = this.levels;
     this.pass(this.progs.bright, L[0], { th: P.th, knee: P.knee }, { src: this.accum.t });
     for (let i = 1; i < L.length; i++)
@@ -155,10 +164,5 @@ class Post {
     for (let i = L.length - 2; i >= 0; i--)
       this.pass(this.progs.up, L[i], { px: [0.5 / L[i + 1].w, 0.5 / L[i + 1].h] }, { src: L[i + 1].t });
     gl.disable(gl.BLEND);
-    this.upload(this.hudTex, hudCanvas, true);
-    this.pass(this.progs.final, null, {
-      res: [this.w, this.h], seed: P.seed, bloomAmt: P.bloom, ca: P.ca, vig: P.vig, grain: P.grain,
-      expo: P.expo, warp: P.warp, sat: P.sat, lift: P.lift, gain: P.gain, tint: P.tint,
-    }, { scene: this.accum.t, bloom: L[0].t, hud: this.hudTex });
   }
 }

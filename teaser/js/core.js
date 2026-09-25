@@ -25,24 +25,6 @@ function initTimeline(tm) {
   ];
 }
 
-function envAt(name, t) {
-  const a = name === 'all' ? TL.tm.envAll : TL.tm.env[name];
-  const f = t * FPS, i = Math.floor(f), fr = f - i;
-  const g = k => a[Math.max(0, Math.min(a.length - 1, k))];
-  return g(i) + (g(i + 1) - g(i)) * fr;
-}
-
-// Sum of decaying pulses from detected onsets in a band (0..~1).
-function onsetPulse(band, t, decay = 0.12, minS = 0) {
-  let v = 0;
-  for (const o of TL.tm.onsets[band]) {
-    if (o.t > t) break;
-    if (o.s < minS) continue;
-    v += o.s * Math.exp(-(t - o.t) / decay);
-  }
-  return Math.min(1.2, v);
-}
-
 // ---------- math ----------
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -64,33 +46,6 @@ const E = {
 };
 const seg = (t, a, b, ease = E.lin) => ease(inv(a, b, t));
 const pulse = (t, t0, d) => t < t0 ? 0 : Math.exp(-(t - t0) / d);
-const win = (t, a, b) => t >= a && t < b;
-
-function rng(seed) {
-  return function () {
-    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
-    let r = Math.imul(seed ^ seed >>> 15, 1 | seed);
-    r = r + Math.imul(r ^ r >>> 7, 61 | r) ^ r;
-    return ((r ^ r >>> 14) >>> 0) / 4294967296;
-  };
-}
-// Smooth 1D value noise, deterministic.
-function noise1(x, seed = 0) {
-  const h = n => { const s = Math.sin(n * 127.1 + seed * 311.7) * 43758.5453; return s - Math.floor(s); };
-  const i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
-  return lerp(h(i), h(i + 1), u) * 2 - 1;
-}
-
-// ---------- palette ----------
-const C = {
-  ink: '#0a0706', ink2: '#120b08', rose: '#2b120c', mahog: '#5a2314',
-  gold: '#f4d77a', goldHi: '#fff3c4', goldMid: '#d9a441', goldLo: '#8a5a1c',
-  ivory: '#f2ece0', blue: '#8cc4d6', navy: '#0b1620', red: '#c8412e',
-};
-const rgba = (hex, a) => {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
-};
 
 // ---------- canvas helpers ----------
 function makeCanvas(w, h) {
@@ -136,10 +91,7 @@ function parseChord(sym) {
   const m = sym.match(/^([A-G])(♭?)(m?)(.*)$/);
   return { root: m[1], acc: m[2], q: m[3], ext: m[4] };
 }
-function chordWidth(ctx, sym, size, family = 'Cinzel', weight = 700) {
-  return drawChord(ctx, sym, 0, 0, size, { family, weight, measure: true });
-}
-function drawChord(ctx, sym, x, y, size, { family = 'Cinzel', weight = 700, measure = false, align = 'left' } = {}) {
+function drawChord(ctx, sym, x, y, size, { family = 'Inter', weight = 600, measure = false, align = 'left' } = {}) {
   const c = parseChord(sym);
   ctx.save();
   ctx.textBaseline = 'alphabetic';
@@ -150,9 +102,7 @@ function drawChord(ctx, sym, x, y, size, { family = 'Cinzel', weight = 700, meas
     cx += ctx.measureText(c.root).width + size * 0.02;
     if (c.acc) { if (draw) flatPath(ctx, x + cx, y - size * 0.34, size * 0.52); cx += size * 0.26; }
     if (c.q) {
-      // Cinzel has no lowercase (its 'm' is a small cap that would read as "M7"), so
-      // the minor sign is set in Cormorant.
-      ctx.font = `600 ${size * 0.8}px "Cormorant Garamond"`;
+      ctx.font = `${weight - 100} ${size * 0.72}px ${family}`;
       if (draw) ctx.fillText(c.q, x + cx, y);
       cx += ctx.measureText(c.q).width + size * 0.04;
     }
@@ -176,45 +126,6 @@ function drawChord(ctx, sym, x, y, size, { family = 'Cinzel', weight = 700, meas
   }
   ctx.restore();
   return w;
-}
-
-// Gold leaf material rendered once into a bitmap: gradient body, brushed
-// texture sampled from the logo's own lettering, engraved edge and rim light.
-function goldGlyph(text, font, size, { pad = 40, letterTex = null, tracking = 0 } = {}) {
-  const m = makeCanvas(10, 10).getContext('2d');
-  m.font = font; m.letterSpacing = tracking + 'px';
-  const tm = m.measureText(text);
-  const w = Math.ceil(tm.actualBoundingBoxLeft + tm.actualBoundingBoxRight) + pad * 2;
-  const h = Math.ceil(tm.actualBoundingBoxAscent + tm.actualBoundingBoxDescent) + pad * 2;
-  const cv = makeCanvas(w, h), g = cv.getContext('2d');
-  const ox = pad + tm.actualBoundingBoxLeft, oy = pad + tm.actualBoundingBoxAscent;
-  g.font = font; g.letterSpacing = tracking + 'px'; g.textBaseline = 'alphabetic';
-  const gr = g.createLinearGradient(0, pad, 0, h - pad);
-  gr.addColorStop(0, '#fff6cf'); gr.addColorStop(0.28, '#f6d77c'); gr.addColorStop(0.55, '#d8a540');
-  gr.addColorStop(0.78, '#f0c965'); gr.addColorStop(1, '#8a5a1c');
-  g.fillStyle = gr; g.fillText(text, ox, oy);
-  if (letterTex) {
-    // brushed leaf from the painting, clipped to the glyph before blending
-    const tx = makeCanvas(w, h), tg = tx.getContext('2d');
-    tg.drawImage(letterTex.img, letterTex.sx, letterTex.sy, letterTex.sw, letterTex.sh, 0, 0, w, h);
-    tg.globalCompositeOperation = 'destination-in'; tg.drawImage(cv, 0, 0);
-    g.globalAlpha = 0.7; g.globalCompositeOperation = 'overlay'; g.drawImage(tx, 0, 0);
-    g.globalAlpha = 1;
-  }
-  g.globalCompositeOperation = 'source-atop';
-  // diagonal sheen bands
-  const sh = g.createLinearGradient(0, 0, w, h);
-  sh.addColorStop(0.0, 'rgba(255,255,255,0)'); sh.addColorStop(0.38, 'rgba(255,250,220,0.0)');
-  sh.addColorStop(0.46, 'rgba(255,250,220,0.35)'); sh.addColorStop(0.52, 'rgba(255,250,220,0)');
-  sh.addColorStop(1, 'rgba(0,0,0,0.25)');
-  g.fillStyle = sh; g.fillRect(0, 0, w, h);
-  // engraved inner edge
-  g.lineWidth = Math.max(2, size * 0.008); g.strokeStyle = 'rgba(90,50,10,0.75)';
-  g.strokeText(text, ox, oy);
-  g.globalCompositeOperation = 'source-over';
-  g.lineWidth = Math.max(1, size * 0.0025); g.strokeStyle = 'rgba(255,245,210,0.55)';
-  g.strokeText(text, ox, oy);
-  return { cv, w, h, ox, oy };
 }
 
 // Draw a bitmap-with-alpha as a mask filled by a moving highlight band (additive).
