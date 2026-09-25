@@ -134,31 +134,28 @@ function headlines() {
   ];
 }
 function drawHeadline(ctx, t) {
+  // The headline block is one slot two lines tall: the old block rolls up out
+  // of it while the new one rolls in from a full slot below, so they never meet.
   const HL = headlines();
-  const size = 104, lh = 114, top = 318;
+  const size = 104, lh = 114, top = 318, slot = 2 * lh;
+  let i = -1;
+  HL.forEach((h, k) => { if (t >= h.t - 0.03) i = k; });
+  if (i < 0) return;
+  const cur = HL[i], prev = HL[i - 1];
+  const p = seg(t, cur.t - 0.03, cur.t + 0.55, E.outExpo);
   ctx.save();
+  ctx.beginPath(); ctx.rect(COL.x - 10, top - size * 0.96, COL.w + 20, slot); ctx.clip();
   ctx.font = `600 ${size}px Inter`; ctx.letterSpacing = '-4px'; ctx.fillStyle = INK; ctx.textBaseline = 'alphabetic';
-  HL.forEach((h, i) => {
-    const next = HL[i + 1];
-    if (t < h.t - 0.02 || (next && t > next.t + 0.3)) return;
-    h.lines.forEach((line, li) => {
-      const inn = seg(t, h.t + li * 0.05, h.t + 0.5 + li * 0.05, E.outExpo);
-      const out = next ? seg(t, next.t - 0.16 + li * 0.03, next.t + 0.12 + li * 0.03, E.inCubic) : 0;
-      const y = top + li * lh;
-      const dy = (1 - inn) * lh * 0.95 - out * lh * 0.95;
-      ctx.save();
-      ctx.beginPath(); ctx.rect(COL.x - 10, y - size * 0.96, COL.w + 20, lh * 1.02); ctx.clip();
-      ctx.fillText(line, COL.x - 5, y + dy);
-      ctx.restore();
-    });
-    if (h.label) {
-      const e = seg(t, h.t, h.t + 0.4, E.outExpo);
-      ctx.save(); ctx.globalAlpha = e;
-      mono(ctx, h.label, COL.x, top - size - 16 + (1 - e) * 10, { size: 14, a: 0.7, track: 5 });
-      ctx.restore();
-    }
-  });
+  const block = (lines, dy) => lines.forEach((line, li) => ctx.fillText(line, COL.x - 5, top + li * lh + dy));
+  if (prev && p < 1) block(prev.lines, -p * slot);
+  block(cur.lines, (1 - p) * slot);
   ctx.restore();
+  if (cur.label) {
+    const e = seg(t, cur.t, cur.t + 0.4, E.outExpo);
+    ctx.save(); ctx.globalAlpha = e;
+    mono(ctx, cur.label, COL.x, top - size - 16 + (1 - e) * 10, { size: 14, a: 0.7, track: 5 });
+    ctx.restore();
+  }
 }
 
 // -------------------------------------------------------------- manifesto
@@ -566,6 +563,6 @@ function postParams(t, frame) {
 function fastMotion(t) {
   const w = [[TL.drums - 0.15, TL.drums + 0.3], [TL.B2 - 0.3, TL.B2 + 0.5], [TL.B3 - 0.4, TL.B3 + 0.1],
     [TL.beat(10) - 0.02, TL.beat(10) + 0.5], [TL.B4 - 0.05, TL.B4 + 0.35], [TL.beat(15.2), TL.B5 + 0.72]];
-  if (headlines().some(h => t > h.t - 0.2 && t < h.t + 0.25)) return true;
+  if (headlines().some(h => t > h.t - 0.05 && t < h.t + 0.3)) return true;
   return w.some(([a, b]) => t >= a && t < b);
 }
