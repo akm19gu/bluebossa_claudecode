@@ -405,7 +405,7 @@ function s2(ctx, t) {
   });
   ctx.restore();
   flash(ctx, 0.18 * pulse(t, hit, 0.1), '#dff3ff');
-  if (ex > 0) glow(ctx, cx, cy, 200 + 500 * ex, C.goldHi, ex);
+  if (ex > 0) glow(ctx, cx, cy, 160 + 260 * ex, C.goldHi, 0.75 * ex);
 }
 
 // ------------------------------------------------------------------- S3
@@ -479,8 +479,8 @@ function s3(ctx, t) {
   ctx.font = '700 20px Cinzel';
   textFlat(ctx, 'A♭', rx + 5 * kw, ky + 140 + pressOf(68) * 6, 20, { align: 'center' });
   ctx.restore();
-  flash(ctx, 0.6 * pulse(t, t0, 0.1));
-  ring(ctx, 590, 560, 60 + 1200 * seg(t, t0, t0 + 0.7, E.outCubic), 5, C.goldHi, 0.7 * (1 - seg(t, t0, t0 + 0.7)));
+  flash(ctx, 0.28 * pulse(t, t0, 0.08));
+  ring(ctx, 590, 500, 60 + 1200 * seg(t, t0, t0 + 0.7, E.outCubic), 5, C.goldHi, 0.7 * (1 - seg(t, t0, t0 + 0.7)));
 }
 
 // ------------------------------------------------------------------- S4
