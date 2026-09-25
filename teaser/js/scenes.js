@@ -380,7 +380,7 @@ function stageLabels(ctx, top, chord, a) {
 function st3(ctx, t) {
   const t0 = TL.B3, hit = TL.beat(10);
   const e = seg(t, t0, t0 + 0.55, E.outExpo);
-  const out = seg(t, TL.B4 - 0.02, TL.B4 + 0.3, E.inOutExpo);
+  const out = seg(t, TL.B4 - 0.01, TL.B4 + 0.42, E.outExpo);
   ctx.save(); clipStage(ctx);
   stageLabels(ctx, 'ii — SUPERTONIC', 'Dm7♭5', e * (1 - out));
   const sl = seg(t, hit - 0.01, hit + 0.5), slices = 9, base = SQ.cy + 190;
@@ -398,7 +398,7 @@ function st3(ctx, t) {
 // S4 — V, then an empty slot where the I should land
 function st4(ctx, t) {
   const t0 = TL.B4, h1 = TL.beat(14), h2 = 10.699;
-  const inn = seg(t, t0 - 0.02, t0 + 0.3, E.inOutExpo);
+  const inn = seg(t, t0 - 0.01, t0 + 0.42, E.outExpo);
   const shrink = seg(t, TL.beat(15.2), TL.beat(15.9), E.inOutCubic);
   ctx.save(); clipStage(ctx);
   stageLabels(ctx, 'V — DOMINANT', 'G7', inn);
@@ -435,9 +435,11 @@ function st5(ctx, t) {
   if (fade > 0) {
     ctx.globalAlpha = fade;
     numeral(ctx, 'V', SQ.x + 190, SQ.cy + 110, 330);
-    const land = E.outBack(inv(late - 0.12, late + 0.06, t));
+    // falls in and touches down exactly 70 ms after the downbeat, then settles
+    const fall = inv(late - 0.1, late, t);
+    const dy = t < late ? (1 - fall * fall) * 420 : -16 * Math.exp(-(t - late) / 0.06) * Math.abs(Math.sin((t - late) * 38));
     const wob = t >= late ? 0.05 * Math.sin((t - late) * 30) * pulse(t, late, 0.12) : 0;
-    ctx.save(); ctx.translate(SQ.x + 510, SQ.cy + 110 - (1 - land) * 420); ctx.rotate(lerp(-0.25, -0.12, land) + wob);
+    ctx.save(); ctx.translate(SQ.x + 510, SQ.cy + 110 - dy); ctx.rotate(lerp(-0.3, -0.12, fall) + wob);
     numeral(ctx, 'I', 0, 0, 330); ctx.restore();
     const s = seg(t, strike, strike + 0.08, E.outCubic);
     if (s > 0) { ctx.save(); ctx.fillStyle = INK; ctx.translate(SQ.x + 510, SQ.cy - 10); ctx.rotate(-0.35); ctx.fillRect(-150, -3, 300 * s, 6); ctx.restore(); }
@@ -493,7 +495,7 @@ function drawScene(ctx, t) {
   if (t < TL.first) st0(ctx, t);
   else if (t < TL.B2) st1(ctx, t);
   else if (t < TL.B3) st2(ctx, t);
-  else if (t < TL.B4 + 0.3) { if (t >= TL.B4 - 0.02) st4(ctx, t); st3(ctx, t); }
+  else if (t < TL.B4 + 0.42) { if (t >= TL.B4 - 0.01) st4(ctx, t); st3(ctx, t); }
   else if (t < TL.B5) st4(ctx, t);
   else st5(ctx, t);
   if (t > TL.B2 - 0.3 && t < TL.B2 + 0.45) keyWipe(ctx, t, TL.B2, { x: SQ.x, y: SQ.y, w: SQ.s, h: SQ.s });
@@ -562,7 +564,7 @@ function postParams(t, frame) {
 // Fast moves get more shutter samples so they blur as streaks.
 function fastMotion(t) {
   const w = [[TL.drums - 0.15, TL.drums + 0.3], [TL.B2 - 0.3, TL.B2 + 0.5], [TL.B3 - 0.4, TL.B3 + 0.1],
-    [TL.beat(10) - 0.02, TL.beat(10) + 0.5], [TL.B4 - 0.05, TL.B4 + 0.35], [TL.beat(15.2), TL.B5 + 0.72]];
+    [TL.beat(10) - 0.02, TL.beat(10) + 0.5], [TL.B4 - 0.05, TL.B4 + 0.42], [TL.beat(15.2), TL.B5 + 0.72]];
   if (headlines().some(h => t > h.t - 0.05 && t < h.t + 0.3)) return true;
   return w.some(([a, b]) => t >= a && t < b);
 }
