@@ -163,23 +163,36 @@ function drawKeyboard(ctx, x, y, w, h, lo, hi, lit, press, alpha = 1) {
   ctx.restore();
 }
 
-// Piano-key curtain used as the bar 1 -> bar 2 wipe. phase: 0..1 covering, 1..2 uncovering.
-function keyWipe(ctx, phase) {
-  if (phase <= 0 || phase >= 2) return;
-  const n = 14, kw = W / n;
+// Piano-key curtain for the bar 1 -> bar 2 cut: a keyboard falls in as a
+// left-to-right glissando, is complete exactly on the downbeat th, and keeps
+// falling so bar 2 is revealed on the hit rather than after it.
+function keyWipe(ctx, t, th) {
+  const n = 14, kw = W / n, st = 0.011;
+  const keyY = i => {
+    const c = E.outCubic(inv(th - 0.27 + i * st, th - 0.27 + i * st + 0.12, t));
+    const u = E.outQuart(inv(th + i * st * 0.7, th + i * st * 0.7 + 0.2, t));
+    return lerp(-H * 1.08, 0, c) + u * H * 1.12;
+  };
+  const ys = Array.from({ length: n }, (_, i) => keyY(i));
+  if (ys.every(y => y <= -H || y >= H)) return;
   ctx.save();
   for (let i = 0; i < n; i++) {
-    const d = (i % 2 ? 0.06 : 0) + i * 0.018;
-    let y;
-    if (phase <= 1) y = lerp(-H - 80, 0, E.outCubic(clamp((phase - d) / (1 - 0.3))));
-    else y = lerp(0, H + 80, E.inCubic(clamp((phase - 1 - d) / (1 - 0.3))));
-    const x = i * kw;
-    const g = ctx.createLinearGradient(x, 0, x + kw, 0);
-    g.addColorStop(0, '#020202'); g.addColorStop(0.15, '#161517'); g.addColorStop(0.5, '#0b0b0c'); g.addColorStop(0.9, '#1c1b1d'); g.addColorStop(1, '#010101');
-    ctx.fillStyle = g;
-    roundRect(ctx, x - 0.5, y - 20, kw + 1, H + 20, 10); ctx.fill();
-    ctx.fillStyle = 'rgba(255,236,190,0.22)'; ctx.fillRect(x + kw * 0.12, y + H - 26, kw * 0.76, 3);
-    ctx.fillStyle = 'rgba(255,255,255,0.05)'; ctx.fillRect(x + kw * 0.5, y, 2, H - 30);
+    const y = ys[i], x = i * kw;
+    if (y <= -H || y >= H) continue;
+    const g = ctx.createLinearGradient(0, y, 0, y + H);
+    g.addColorStop(0, '#b9ae98'); g.addColorStop(0.7, '#e9e1d0'); g.addColorStop(1, '#f6f0e3');
+    ctx.fillStyle = g; roundRect(ctx, x + 1.5, y - 30, kw - 3, H + 30, 9); ctx.fill();
+    ctx.fillStyle = 'rgba(40,24,12,0.35)'; ctx.fillRect(x + 1.5, y + H - 6, kw - 3, 6);
+  }
+  for (let i = 0; i < n - 1; i++) {
+    if (![0, 1, 3, 4, 5].includes(i % 7)) continue;
+    const y = (ys[i] + ys[i + 1]) / 2;
+    if (y <= -H || y >= H) continue;
+    const bw = kw * 0.58, bx = (i + 1) * kw - bw / 2, bh = H * 0.62;
+    const g = ctx.createLinearGradient(bx, 0, bx + bw, 0);
+    g.addColorStop(0, '#030303'); g.addColorStop(0.45, '#1f1d20'); g.addColorStop(1, '#040404');
+    ctx.fillStyle = g; roundRect(ctx, bx, y - 30, bw, bh + 30, 6); ctx.fill();
+    ctx.fillStyle = 'rgba(255,240,210,0.28)'; ctx.fillRect(bx + bw * 0.18, y + bh - 14, bw * 0.64, 3);
   }
   ctx.restore();
 }
@@ -251,7 +264,7 @@ function s1(ctx, t) {
   drawLogo(ctx, cam, { par: 1.4, sx: noise1(t * 40, 1) * shake, sy: noise1(t * 40, 2) * shake });
   // light sweeping across the lacquer
   const sw = seg(t, t0 + 0.05, t0 + 1.6, E.inOutSine);
-  leak(ctx, lerp(-200, W + 300, sw), 380, 520, '#9fd0da', 0.22);
+  leak(ctx, lerp(-200, W + 300, sw), 380, 520, '#9fd0da', 0.16);
   leak(ctx, W + 80, -60, 900, '#ff9a4a', 0.28 + 0.15 * pulse(t, TL.drums, 0.4));
   // legibility scrim
   const sg = ctx.createLinearGradient(0, 0, W * 0.75, 0);
@@ -294,7 +307,7 @@ function s1(ctx, t) {
   }
   ctx.restore();
   dust(ctx, t, { n: 70, seed: 5, alpha: 0.5, speed: 22 });
-  flash(ctx, 0.55 * pulse(t, t0, 0.12));
+  flash(ctx, 0.38 * pulse(t, t0, 0.1));
   ring(ctx, W / 2, H / 2, 40 + 1400 * seg(t, t0, t0 + 0.6, E.outCubic), 6 * (1 - seg(t, t0, t0 + 0.6)), C.goldHi, 0.8 * (1 - seg(t, t0, t0 + 0.6)));
 }
 
@@ -323,7 +336,7 @@ function s2(ctx, t) {
     ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc); ctx.rotate(rot);
     ctx.globalAlpha = alpha;
     // rings + ticks
-    ctx.strokeStyle = rgba(C.gold, 0.55); ctx.lineWidth = 1.5;
+    ctx.strokeStyle = rgba(C.gold, 0.45 + 0.4 * envAt('low', t)); ctx.lineWidth = 1.5 + 2.5 * envAt('low', t);
     ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
     ctx.strokeStyle = rgba(C.gold, 0.22); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, R * 0.64, 0, Math.PI * 2); ctx.stroke();
@@ -400,7 +413,7 @@ function s3(ctx, t) {
   const t0 = TL.B3, t1 = TL.B4, hit = TL.beat(10);
   const lt = t - t0;
   ctx.fillStyle = '#0b0605'; ctx.fillRect(0, 0, W, H);
-  glow(ctx, 600, 560, 900, '#7a2e14', 0.55);
+  glow(ctx, 600, 520, 900, '#7a2e14', 0.45 + 0.3 * envAt('low', t)); // breathes with the bass
   leak(ctx, 1700, 200, 800, '#ff8a3c', 0.12);
   dust(ctx, t, { n: 80, seed: 31, alpha: 0.4, speed: 16 });
 
@@ -477,7 +490,7 @@ function s4(ctx, t) {
   const imp = seg(t, TL.beat(14.6), t1 - 0.02, E.inQuart); // collapse into one gold line
   const h1 = TL.beat(14), h2 = 10.699, h3 = 10.786;
   ctx.fillStyle = '#0b0404'; ctx.fillRect(0, 0, W, H);
-  glow(ctx, W / 2, H / 2, 1000, '#8a1d10', 0.5 * (1 - imp));
+  glow(ctx, W / 2, H / 2, 1000, '#8a1d10', (0.38 + 0.3 * envAt('low', t)) * (1 - imp));
 
   const shake = (pulse(t, h1, 0.1) + pulse(t, h2, 0.1)) * 14 * (1 - imp);
   const shx = noise1(t * 50, 3) * shake, shy = noise1(t * 50, 4) * shake;
@@ -679,17 +692,14 @@ function drawScene(ctx, t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
   ctx.letterSpacing = '0px'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.setLineDash([]);
-  const wipeIn = TL.B2 - 0.3, wipeOut = TL.B2 + 0.42;
+
   if (t < TL.first) s0(ctx, t);
   else if (t < TL.B2) s1(ctx, t);
   else if (t < TL.B3) s2(ctx, t);
   else if (t < TL.B4) s3(ctx, t);
   else if (t < TL.B5) s4(ctx, t);
   else s5(ctx, t);
-  if (t > wipeIn && t < wipeOut) {
-    const ph = t < TL.B2 ? inv(wipeIn, TL.B2, t) : 1 + inv(TL.B2, wipeOut, t);
-    keyWipe(ctx, ph);
-  }
+  if (t > TL.B2 - 0.3 && t < TL.B2 + 0.5) keyWipe(ctx, t, TL.B2);
 }
 
 // -------------------------------------------------------------------- HUD

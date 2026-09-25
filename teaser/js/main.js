@@ -2,7 +2,14 @@
 'use strict';
 
 const SUBFRAMES = 5;   // motion-blur samples per frame
+const SUBFRAMES_FAST = 14; // during whips, wipes and collapses, so the blur reads as a streak
 const SHUTTER = 0.5;   // 180° shutter
+
+function fastMotion(t) {
+  const w = [[TL.drums - 0.15, TL.drums + 0.3], [TL.B2 - 0.3, TL.B2 + 0.5], [TL.B3 - 0.45, TL.B3 + 0.12],
+    [TL.beat(10) - 0.02, TL.beat(10) + 0.5], [TL.B4 - 0.02, TL.B4 + 0.35], [TL.B5 - 0.75, TL.B5 + 0.6]];
+  return w.some(([a, b]) => t >= a && t < b);
+}
 
 const out = document.getElementById('out');
 const scene = makeCanvas(W, H), sctx = scene.getContext('2d', { willReadFrequently: false });
@@ -48,11 +55,12 @@ async function boot() {
 
 function renderFrame(f) {
   const t = f / FPS;
+  const n = fastMotion(t) ? SUBFRAMES_FAST : SUBFRAMES;
   post.begin();
-  for (let i = 0; i < SUBFRAMES; i++) {
-    const ts = clamp(t + ((i + 0.5) / SUBFRAMES - 0.5) * SHUTTER / FPS, 0, DUR - 1e-4);
+  for (let i = 0; i < n; i++) {
+    const ts = clamp(t + ((i + 0.5) / n - 0.5) * SHUTTER / FPS, 0, DUR - 1e-4);
     drawScene(sctx, ts);
-    post.add(scene, 1 / SUBFRAMES);
+    post.add(scene, 1 / n);
   }
   drawHUD(hctx, t);
   post.finish(hud, postParams(t, f));
