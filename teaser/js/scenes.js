@@ -435,6 +435,8 @@ function st5(ctx, t) {
   if (fade > 0) {
     ctx.globalAlpha = fade;
     numeral(ctx, 'V', SQ.x + 190, SQ.cy + 110, 330);
+    ctx.save(); ctx.setLineDash([10, 8]); ctx.strokeStyle = ink(0.8); ctx.lineWidth = 1.5;
+    ctx.strokeRect(SLOT.x, SLOT.y, SLOT.w, SLOT.h); ctx.restore();
     // falls in and touches down exactly 70 ms after the downbeat, then settles
     const fall = inv(late - 0.1, late, t);
     const dy = t < late ? (1 - fall * fall) * 420 : -16 * Math.exp(-(t - late) / 0.06) * Math.abs(Math.sin((t - late) * 38));

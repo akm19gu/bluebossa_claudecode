@@ -99,7 +99,7 @@ try {
       '-ss', '0', '-t', String(DUR), '-i', song,
       '-filter_complex', `[1:a]atrim=0:${DUR},afade=t=out:st=14.45:d=0.55:curve=qsin,asetpts=N/SR/TB[a]`,
       '-map', '0:v', '-map', '[a]',
-      '-c:v', 'libx264', '-preset', 'slow', '-crf', '14', '-tune', 'grain', '-pix_fmt', 'yuv420p',
+      '-c:v', 'libx264', '-preset', 'slow', '-crf', '16', '-tune', 'grain', '-pix_fmt', 'yuv420p',
       '-colorspace', 'bt709', '-color_primaries', 'bt709', '-color_trc', 'bt709',
       '-c:a', 'aac', '-b:a', '320k', '-ar', '48000', '-t', String(DUR),
       '-movflags', '+faststart', outFile,
