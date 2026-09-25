@@ -1,0 +1,7 @@
+# rendered frames / videos and the source song stay local
+teaser/out/
+teaser/stills/
+*.mp3
+*.wav
+node_modules/
+__pycache__/
