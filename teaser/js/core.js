@@ -11,12 +11,11 @@ function initTimeline(tm) {
   TL.beatLen = tm.beat;
   TL.g0 = tm.grid0;
   TL.beat = k => TL.g0 + k * TL.beatLen;
-  TL.first = tm.firstHit;          // piano's first chord (pushed ahead of the grid)
-  TL.drums = 2.636;                 // drums enter on bar 1 beat 3 (measured attack)
-  TL.bar = n => TL.beat(4 * (n - 1)); // bar n downbeat (1-based)
-  TL.B2 = TL.bar(2); TL.B3 = TL.bar(3); TL.B4 = TL.bar(4); TL.B5 = TL.bar(5); TL.B6 = TL.bar(6);
+  TL.drums = 2.636;                 // drums enter on bar 1 beat 4 (measured attack)
+  TL.bar = n => TL.beat(4 * (n - 1)); // bar n downbeat (1-based); beat 0 = bar 1
+  TL.B1 = TL.bar(1); TL.B2 = TL.bar(2); TL.B3 = TL.bar(3); TL.B4 = TL.bar(4); TL.B5 = TL.bar(5); TL.B6 = TL.bar(6);
   TL.chords = [
-    { t: TL.first, sym: 'Cm7', fn: 'i' },
+    { t: TL.B1, sym: 'Cm7', fn: 'i' },
     { t: TL.B2, sym: 'Fm7', fn: 'iv' },
     { t: TL.B3, sym: 'Dm7♭5', fn: 'ii' },
     { t: TL.B4, sym: 'G7', fn: 'V' },

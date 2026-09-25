@@ -2,14 +2,14 @@
 // on the right (the album-cover shape of the logo). The painting is the only
 // colour in the film.
 //
-//   0.00  count-in  "Post251"          stage: frame draws, "3" "4"
-//   1.29  bar 1  Cm7   "Experimental digital jazz"   stage: the painted keys (acoustic)
-//   3.98  bar 2  Fm7   "Rhythm × Harmony"            stage: onsets vs. grid, pitch circle
-//   6.59  bar 3  Dm7♭5 "Beyond convention"           stage: ii
-//   9.20  bar 4  G7    "ii – V – I"                  stage: V, then an empty slot for the I
-//  11.80  bar 5  Cm7   "Acoustic × Digital"          stage: the I lands late, is struck out, the logo takes its place
-//  13.11  (beat 3)     "Grooves"                     album, event
-//  14.41  bar 6  E♭m7  hold
+//   0.00  count-in  "Post251"          stage: frame draws, "4"
+//   0.72  bar 1  Cm7   "Experimental digital jazz"   stage: the painted keys (acoustic); first chord on beat 2
+//   3.33  bar 2  Fm7   "Rhythm × Harmony"            stage: drunk feel vs. a straight grid, notes between the keys
+//   5.94  bar 3  Dm7♭5 "Beyond convention"           stage: ii
+//   8.54  bar 4  G7    "ii – V – I"                  stage: V, then an empty slot for the I
+//  11.15  bar 5  Cm7   "Acoustic × Digital"          stage: the I lands late, is struck out, the logo takes its place
+//  12.46  (beat 3)     "Grooves"                     album, event
+//  13.76  bar 6  E♭m7  hold
 'use strict';
 
 const A = {}; // images and logo metadata (filled by main.js)
@@ -124,8 +124,8 @@ function keyWipe(ctx, t, th, box, n = 7) {
 // --------------------------------------------------------------- headline
 function headlines() {
   return [
-    { t: 0.12, lines: ['Post251'] },
-    { t: TL.first, lines: ['Experimental', 'digital jazz'] },
+    { t: 0.03, lines: ['Post251'] },
+    { t: TL.B1, lines: ['Experimental', 'digital jazz'] },
     { t: TL.B2, lines: ['Rhythm ×', 'Harmony'] },
     { t: TL.B3, lines: ['Beyond', 'convention'] },
     { t: TL.B4, lines: ['ii – V – I'] },
@@ -164,8 +164,8 @@ function drawHeadline(ctx, t) {
 // Words prefixed with * are set in the semibold.
 function phrases() {
   return [
-    [0.16, 1.16, '*Post251 is an experimental digital jazz unit'],
-    [TL.first, TL.first + 2.1, 'formed by drummer and composer *Nakam and composer *Shunya *Ishikawa *(Pami).'],
+    [0.06, 0.62, '*Post251 is an experimental digital jazz unit'],
+    [TL.B1, TL.B1 + 2.1, 'formed by drummer and composer *Nakam and composer *Shunya *Ishikawa *(Pami).'],
     [TL.B2, TL.B2 + 1.3, 'From the perspectives of *rhythm and *harmony,'],
     [TL.B3, TL.B3 + 1.7, 'we aim to move beyond broadly applied conventions in music,'],
     [TL.B4, TL.B4 + 1.3, 'including the *ii–V–I progression.'],
@@ -213,7 +213,7 @@ function drawPara(ctx, t) {
 // ----------------------------------------------------------------- credits
 function drawCredits(ctx, t) {
   const y = SQ.y + SQ.s + 46;
-  const cols = [[SQ.x, 'NAKAM', 'Drums, Composition', TL.first], [SQ.x + 360, 'SHUNYA ISHIKAWA (PAMI)', 'Composition', TL.first + 0.12]];
+  const cols = [[SQ.x, 'NAKAM', 'Drums, Composition', TL.B1]];
   ctx.save();
   cols.forEach(([x, name, role, ta], i) => {
     const e = seg(t, ta, ta + 0.45, E.outExpo);
@@ -234,7 +234,7 @@ function drawCredits(ctx, t) {
 
 // ---------------------------------------------------------- stage: frame
 function drawFrame(ctx, t) {
-  const p = seg(t, 0.08, 1.0, E.inOutCubic);
+  const p = seg(t, 0.02, 0.62, E.inOutCubic);
   let left = SQ.s * 4 * p;
   const pts = [[SQ.x, SQ.y], [SQ.x + SQ.s, SQ.y], [SQ.x + SQ.s, SQ.y + SQ.s], [SQ.x, SQ.y + SQ.s], [SQ.x, SQ.y]];
   ctx.save(); ctx.strokeStyle = INK; ctx.lineWidth = 1.2;
@@ -249,13 +249,13 @@ function drawFrame(ctx, t) {
 // S0 — count-in: two silent beats inside an empty stage
 function st0(ctx, t) {
   ctx.save(); clipStage(ctx);
-  const g = seg(t, 0.2, 0.9, E.outCubic);
+  const g = seg(t, 0.08, 0.6, E.outCubic);
   for (let i = 1; i < 4; i++) {
     hair(ctx, SQ.x + SQ.s * i / 4, SQ.y, SQ.x + SQ.s * i / 4, SQ.y + SQ.s * g, 0.07);
     hair(ctx, SQ.x, SQ.y + SQ.s * i / 4, SQ.x + SQ.s * g, SQ.y + SQ.s * i / 4, 0.07);
   }
   ctx.font = '300 220px Inter'; ctx.textAlign = 'center'; ctx.letterSpacing = '-8px';
-  [['3', TL.beat(-2)], ['4', TL.beat(-1)]].forEach(([s, bt]) => {
+  [['4', TL.beat(-1)]].forEach(([s, bt]) => {
     const e = seg(t, bt - 0.02, bt + 0.12, E.outCubic), o = 1 - seg(t, bt + 0.36, bt + 0.6, E.inCubic);
     if (e * o <= 0) return;
     const sc = lerp(1.15, 1, E.outExpo(inv(bt, bt + 0.5, t)));
@@ -265,20 +265,20 @@ function st0(ctx, t) {
   ctx.letterSpacing = '0px'; ctx.textAlign = 'left';
   // the pickup's four beats along the bottom edge
   for (let i = 0; i < 4; i++) {
-    const bt = TL.beat(i - 4), on = i >= 2 && t >= bt ? pulse(t, bt, 0.3) : 0;
+    const bt = TL.beat(i - 4), on = i === 3 && t >= bt ? pulse(t, bt, 0.3) : 0;
     const x = SQ.x + SQ.s * (i + 0.5) / 4;
     ctx.fillStyle = ink(0.25 + 0.75 * on);
     ctx.fillRect(x - 1, SQ.y + SQ.s - 36 - 12 * on, 2, 14 + 12 * on);
   }
   // anticipation: a hairline across the middle, about to open
-  const k = seg(t, 0.95, TL.first, E.inCubic);
+  const k = seg(t, TL.B1 - 0.34, TL.B1, E.inCubic);
   if (k > 0) hair(ctx, SQ.cx - SQ.s / 2 * k, SQ.cy, SQ.cx + SQ.s / 2 * k, SQ.cy, 1, 1.5);
   ctx.restore();
 }
 
 // S1 — the painted keys, opening from the hairline
 function st1(ctx, t) {
-  const t0 = TL.first, lt = t - t0;
+  const t0 = TL.B1, lt = t - t0;
   const whip = seg(t, TL.drums - 0.12, TL.drums + 0.2, E.inOutExpo);
   const impact = 1 - seg(t, t0, t0 + 0.7, E.outExpo);
   let cam = { x: 800 + lt * 24 + whip * 380, y: 1440 - lt * 10, z: 0.84 * (1 + 0.1 * impact) * (1 + lt * 0.02), rot: -0.05 + whip * 0.03 };
@@ -295,74 +295,90 @@ function st1(ctx, t) {
   }
 }
 
-// S2 — rhythm (bar 2's onsets against a straight 16th grid) and harmony (a
-// pitch circle in quarter tones with the Fm7 shape)
+// S2 — what the band is after (an illustration, not something this recording
+// does): a drunk / dilla feel pulled off a straight grid, and harmony that
+// lands between the keys.
+const DRUNK = [ // [16th step, offset ms, weight, label?]
+  [0, -12, 1, true], [2, 36, 0.5], [4, 82, 0.9, true], [6, 24, 0.5], [7, -34, 0.45],
+  [8, 6, 1], [10, 48, 0.5], [11, 90, 0.55], [12, 74, 0.9, true], [14, 30, 0.5],
+];
+const MICRO = [[0, 'C'], [5, 'E♭ −50¢'], [10, 'F'], [17, 'A♭ +50¢']]; // quarter tones above C, one per beat
+const isBlackPc = pc => [1, 3, 6, 8, 10].includes(pc);
+
 function st2(ctx, t) {
-  const t0 = TL.B2, t1 = TL.B3, bar = 4 * TL.beatLen;
-  const grid0 = TL.bar(2) - 0.066; // the session's straight grid for bar 2
-  const hit = TL.beat(6);
+  const t0 = TL.B2, t1 = TL.B3, step = TL.beatLen / 4;
   const ent = seg(t, t0, t0 + 0.6, E.outExpo);
   const ex = seg(t, t1 - 0.36, t1 - 0.02, E.inQuart);
-  const sc = (1 - ex) * lerp(0.92, 1, ent);
+  const sc = (1 - ex) * lerp(0.92, 1, ent), la = 0.6 * ent * (1 - ex);
+  const draw = seg(t, t0, t0 + 0.5, E.outCubic);
   ctx.save(); clipStage(ctx);
-  mono(ctx, 'RHYTHM — ONSETS / GRID', SQ.x + 24, SQ.y + 40, { size: 12, a: 0.6 * ent * (1 - ex) });
-  mono(ctx, 'HARMONY — Fm7', SQ.x + SQ.s - 24, SQ.y + 40, { size: 12, a: 0.6 * ent * (1 - ex), align: 'right' });
-  ctx.translate(SQ.cx, SQ.cy + 12); ctx.scale(sc, sc); ctx.rotate(ex * 2.2);
-  const R = 290, r = 168;
-  const draw = seg(t, t0, t0 + 0.55, E.outCubic);
-  // rhythm ring
-  ctx.strokeStyle = ink(0.8); ctx.lineWidth = 1.2;
-  ctx.beginPath(); ctx.arc(0, 0, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * draw); ctx.stroke();
-  for (let i = 0; i < 16; i++) {
-    if (i / 16 > draw) break;
-    const a = -Math.PI / 2 + i * Math.PI / 8, L = i % 4 === 0 ? 26 : 12;
-    hair(ctx, Math.cos(a) * (R - L / 2), Math.sin(a) * (R - L / 2), Math.cos(a) * (R + L / 2), Math.sin(a) * (R + L / 2), i % 4 === 0 ? 0.85 : 0.35, 1.2);
+  mono(ctx, 'DILLA (DRUNK) FEEL', SQ.x + 24, SQ.y + 40, { size: 12, a: la });
+  mono(ctx, 'MICROTONAL HARMONY', SQ.x + 24, SQ.cy + 40, { size: 12, a: la });
+  hair(ctx, SQ.x + 24, SQ.cy, SQ.x + 24 + (SQ.s - 48) * draw, SQ.cy, 0.15 * (1 - ex));
+  ctx.translate(SQ.cx, SQ.cy); ctx.scale(sc, sc); ctx.rotate(ex * 2.2); ctx.translate(-SQ.cx, -SQ.cy);
+  const X0 = SQ.x + 70, X1 = SQ.x + SQ.s - 50, sw = (X1 - X0) / 16;
+
+  // rhythm: the straight row on the grid, the drunk row pulled off it
+  const yS = SQ.y + 128, yD = SQ.y + 262;
+  for (let i = 0; i <= 16; i++) {
+    const x = X0 + i * sw, q = i % 4 === 0;
+    hair(ctx, x, yS - 24, x, lerp(yS - 24, yD + 24, draw), q ? 0.32 : 0.1);
+    if (q && i < 16) mono(ctx, String(i / 4 + 1), x + 5, yS - 32, { size: 11, a: 0.5 * draw, track: 0 });
   }
-  const pa = -Math.PI / 2 + clamp((t - grid0) / bar, 0, 1) * Math.PI * 2;
-  hair(ctx, 0, 0, Math.cos(pa) * (R + 24), Math.sin(pa) * (R + 24), 0.55 * (1 - ex), 1);
-  const bandR = { low: R - 18, mid: R, hi: R + 18 };
-  for (const band of ['low', 'mid', 'hi']) {
-    for (const o of TL.tm.onsets[band]) {
-      if (o.t < grid0 || o.t >= grid0 + bar || o.s < 0.18 || o.t > t) continue;
-      const a = -Math.PI / 2 + (o.t - grid0) / bar * Math.PI * 2;
-      const pop = E.outBack(clamp((t - o.t) / 0.18));
-      ctx.fillStyle = INK;
-      ctx.beginPath(); ctx.arc(Math.cos(a) * bandR[band], Math.sin(a) * bandR[band], Math.max(0, (2.5 + 6 * o.s) * pop), 0, Math.PI * 2); ctx.fill();
+  [['STRAIGHT', yS], ['DRUNK', yD]].forEach(([s, y]) => { // row names, set vertically in the margin
+    ctx.save(); ctx.translate(SQ.x + 42, y); ctx.rotate(-Math.PI / 2);
+    mono(ctx, s, 0, 0, { size: 10, a: 0.45 * draw, track: 2, align: 'center' }); ctx.restore();
+  });
+  const ph = (t - t0) / (4 * TL.beatLen);
+  if (ph >= 0 && ph <= 1) { const px = X0 + ph * (X1 - X0); hair(ctx, px, yS - 30, px, yD + 30, 0.85, 1.5); }
+  for (const [st, ms, w, label] of DRUNK) {
+    const xs = X0 + st * sw, xd = xs + ms / 1000 / step * sw;
+    const ts = t0 + st * step, td = ts + ms / 1000;
+    const ps = E.outBack(clamp((t - ts) / 0.16)), pd = E.outBack(clamp((t - td) / 0.16));
+    const r = 4 + 4 * w;
+    if (ps > 0) {
+      ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(xs, yS, Math.max(0.1, r * ps), 0, Math.PI * 2); ctx.stroke();
+    }
+    if (pd > 0) {
+      hair(ctx, xs, yS + r, lerp(xs, xd, clamp(pd)), lerp(yS + r, yD - r, clamp(pd)), 0.45, 1);
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(xd, yD, Math.max(0.1, r * pd), 0, Math.PI * 2); ctx.fill();
+      if (label) mono(ctx, `${ms > 0 ? '+' : '−'}${Math.abs(ms)}ms`, xd + 2, yD + 26, { size: 10, a: 0.6 * clamp(pd), track: 0, align: 'center' });
     }
   }
-  // pitch circle: 24 quarter-tone ticks, 12 names, the chord's shape
-  ctx.strokeStyle = ink(0.35); ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.arc(0, 0, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * draw); ctx.stroke();
-  for (let i = 0; i < 24; i++) {
-    const a = -Math.PI / 2 + i * Math.PI / 12, L = i % 2 ? 6 : 12;
-    hair(ctx, Math.cos(a) * r, Math.sin(a) * r, Math.cos(a) * (r - L), Math.sin(a) * (r - L), (i % 2 ? 0.3 : 0.7) * draw, 1);
+
+  // harmony: twelve semitone keys with the quarter tones between them; the
+  // marker steps through the chord on each beat and twice stops between keys
+  const kx0 = X0, kw = (X1 - X0) / 12, ry = SQ.cy + 122, k0 = ry + 12, k1 = SQ.y + SQ.s - 72;
+  const bi = clamp(Math.floor((t - t0) / TL.beatLen), 0, 3);
+  const bt = t0 + bi * TL.beatLen;
+  const from = bi > 0 ? MICRO[bi - 1][0] : MICRO[0][0], to = MICRO[bi][0];
+  const qpos = lerp(from, to, E.outExpo(clamp((t - bt) / 0.14)));
+  const onKey = Math.abs(qpos - Math.round(qpos)) < 0.02 && Math.round(qpos) % 2 === 0;
+  for (let i = 0; i < 12; i++) {
+    const x = kx0 + i * kw, black = isBlackPc(i);
+    const lit = onKey && Math.round(qpos) / 2 === i;
+    const between = !onKey && Math.abs(qpos - (2 * i + 1)) < 0.02 || !onKey && Math.abs(qpos - (2 * i - 1)) < 0.02;
+    const h = (k1 - k0) * (black ? 0.62 : 1) * draw;
+    if (black) { ctx.fillStyle = lit ? ink(0.5) : INK; ctx.fillRect(x + 3, k0, kw - 6, h); }
+    else {
+      if (lit) { ctx.fillStyle = ink(0.85); ctx.fillRect(x, k0, kw, h); }
+      else if (between) { ctx.fillStyle = ink(0.08); ctx.fillRect(x, k0, kw, h); }
+      ctx.strokeStyle = ink(0.5); ctx.lineWidth = 1; ctx.strokeRect(x + 0.5, k0, kw - 1, h);
+    }
   }
-  ctx.font = '500 14px "JetBrains Mono"';
-  const names = ['C', 'D♭', 'D', 'E♭', 'E', 'F', 'G♭', 'G', 'A♭', 'A', 'B♭', 'B'];
-  const chord = [5, 8, 0, 3];
-  names.forEach((n, i) => {
-    const a = -Math.PI / 2 + i * Math.PI / 6;
-    ctx.fillStyle = ink((chord.includes(i) ? 1 : 0.4) * draw);
-    textFlat(ctx, n, Math.cos(a) * (r + 24), Math.sin(a) * (r + 24) + 5, 14, { align: 'center' });
-  });
-  const pd = seg(t, t0 + 0.25, t0 + 0.8, E.inOutCubic), pp = pulse(t, hit, 0.25) * (t >= hit ? 1 : 0);
-  const pts = chord.map(i => { const a = -Math.PI / 2 + i * Math.PI / 6; return [Math.cos(a) * (r - 20), Math.sin(a) * (r - 20)]; });
-  const seq = [...pts, pts[0]], upto = pd * (seq.length - 1);
-  ctx.strokeStyle = INK; ctx.lineWidth = 1.6 + 2.5 * pp;
-  ctx.beginPath(); ctx.moveTo(...seq[0]);
-  for (let i = 1; i < seq.length; i++) {
-    const f = clamp(upto - (i - 1));
-    if (f <= 0) break;
-    ctx.lineTo(lerp(seq[i - 1][0], seq[i][0], f), lerp(seq[i - 1][1], seq[i][1], f));
+  for (let q = 0; q < 24; q++) { // the ruler: tall ticks on the keys, short ones between
+    const xc = kx0 + (q / 2) * kw + kw / 2;
+    hair(ctx, xc, ry - (q % 2 ? 6 : 12), xc, ry, (q % 2 ? 0.45 : 0.8) * draw, 1);
   }
-  ctx.stroke();
-  if (pd >= 1) {
-    ctx.fillStyle = ink(0.06 + 0.1 * pp);
-    ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(...p) : ctx.moveTo(...p)); ctx.closePath(); ctx.fill();
-  }
-  pts.forEach(([x, y], i) => { if (pd * 4 > i) { ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(x, y, 4.5 + 2 * pp, 0, Math.PI * 2); ctx.fill(); } });
+  const mx = kx0 + (qpos / 2) * kw + kw / 2;
+  if (!onKey) { ctx.save(); ctx.setLineDash([4, 4]); hair(ctx, mx, ry, mx, k1, 0.9, 1.5); ctx.restore(); }
+  ctx.fillStyle = INK;
+  ctx.beginPath(); ctx.moveTo(mx - 7, ry - 26); ctx.lineTo(mx + 7, ry - 26); ctx.lineTo(mx, ry - 15); ctx.closePath(); ctx.fill();
+  ctx.font = '500 14px "JetBrains Mono"'; ctx.fillStyle = ink(ent);
+  textFlat(ctx, MICRO[bi][1], clamp(mx, SQ.x + 90, SQ.x + SQ.s - 90), ry - 36, 14, { align: 'center' });
   ctx.restore();
-  if (ex > 0.85) { ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(SQ.cx, SQ.cy + 12, 5, 0, Math.PI * 2); ctx.fill(); }
+  if (ex > 0.85) { ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(SQ.cx, SQ.cy, 5, 0, Math.PI * 2); ctx.fill(); }
 }
 
 // Roman numerals, set large in the stage.
@@ -378,7 +394,7 @@ function stageLabels(ctx, top, chord, a) {
 
 // S3 — ii
 function st3(ctx, t) {
-  const t0 = TL.B3, hit = TL.beat(10);
+  const t0 = TL.B3, hit = TL.beat(11);
   const e = seg(t, t0, t0 + 0.55, E.outExpo);
   const out = seg(t, TL.B4 - 0.01, TL.B4 + 0.42, E.outExpo);
   ctx.save(); clipStage(ctx);
@@ -397,7 +413,7 @@ function st3(ctx, t) {
 
 // S4 — V, then an empty slot where the I should land
 function st4(ctx, t) {
-  const t0 = TL.B4, h1 = TL.beat(14), h2 = 10.699;
+  const t0 = TL.B4, h1 = TL.beat(15), h2 = 10.699;
   const inn = seg(t, t0 - 0.01, t0 + 0.42, E.outExpo);
   const shrink = seg(t, TL.beat(15.2), TL.beat(15.9), E.inOutCubic);
   ctx.save(); clipStage(ctx);
@@ -429,7 +445,7 @@ function logoCam(t) {
   return { cam: clampCam({ x: lerp(1500, 1000, p), y: lerp(760, 1000, p), z, rot: 0 }, SQ.s / 2, SQ.s / 2, par), par };
 }
 function st5(ctx, t) {
-  const late = TL.B5 + 0.07, strike = 12.10, wipe0 = 12.12, wipe1 = 12.44;
+  const late = TL.B5 + 0.07, strike = TL.B5 + 0.295, wipe0 = TL.B5 + 0.315, wipe1 = TL.B5 + 0.635;
   ctx.save(); clipStage(ctx);
   const fade = 1 - seg(t, wipe0, wipe1);
   if (fade > 0) {
@@ -452,9 +468,9 @@ function st5(ctx, t) {
   if (w > 0) { // the struck-out slot opens into the painting
     const r = { x: lerp(SLOT.x, SQ.x, w), y: lerp(SLOT.y, SQ.y, w), w: lerp(SLOT.w, SQ.s, w), h: lerp(SLOT.h, SQ.s, w) };
     const { cam, par } = logoCam(t);
-    const ignAt = { '1': 12.29, '5': 12.47, '2': 12.65, 'T': 12.85, 'S': 12.9, 'O': 12.95, 'P': 13.0 };
+    const ignAt = { '1': 0.485, '5': 0.665, '2': 0.845, 'T': 1.045, 'S': 1.095, 'O': 1.145, 'P': 1.195 };
     const ign = {};
-    for (const [g, ta] of Object.entries(ignAt)) ign[g] = seg(t, ta, ta + 0.07) * (1 + 0.4 * (t >= ta ? pulse(t, ta, 0.2) : 0));
+    for (const [g, dt] of Object.entries(ignAt)) { const ta = TL.B5 + dt; ign[g] = seg(t, ta, ta + 0.07) * (1 + 0.4 * (t >= ta ? pulse(t, ta, 0.2) : 0)); }
     ctx.save(); ctx.beginPath(); ctx.rect(r.x, r.y, r.w, r.h); ctx.clip();
     drawLogo(ctx, cam, SQ.cx, SQ.cy, { ign, par, glowBoost: t >= TL.beat(18) ? 0.18 * pulse(t, TL.beat(18), 0.35) : 0 });
     const band = A.lettersGlyph;
@@ -494,7 +510,7 @@ function drawScene(ctx, t) {
   ctx.letterSpacing = '0px'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.setLineDash([]);
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
 
-  if (t < TL.first) st0(ctx, t);
+  if (t < TL.B1) st0(ctx, t);
   else if (t < TL.B2) st1(ctx, t);
   else if (t < TL.B3) st2(ctx, t);
   else if (t < TL.B4 + 0.42) { if (t >= TL.B4 - 0.01) st4(ctx, t); st3(ctx, t); }
@@ -513,7 +529,7 @@ function drawScene(ctx, t) {
 function drawHUD(ctx, t) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, W, H);
-  const vis = seg(t, 0.05, 0.5, E.outCubic);
+  const vis = seg(t, 0.02, 0.3, E.outCubic);
   if (vis <= 0) return;
   ctx.globalAlpha = vis; ctx.textBaseline = 'alphabetic';
   ctx.font = '600 13px Inter'; ctx.letterSpacing = '3px'; ctx.fillStyle = INK;
@@ -540,7 +556,7 @@ function drawHUD(ctx, t) {
     ctx.restore();
   }
   const bi = Math.floor((t - TL.g0) / TL.beatLen + 1e-6);
-  mono(ctx, t < TL.first ? 'COUNT-IN' : `BAR ${String(Math.floor(bi / 4) + 1).padStart(2, '0')} · ${((bi % 4) + 4) % 4 + 1}`, bx + 250, by, { size: 12, a: 0.45 });
+  mono(ctx, t < TL.B1 ? 'COUNT-IN' : `BAR ${String(Math.floor(bi / 4) + 1).padStart(2, '0')} · ${((bi % 4) + 4) % 4 + 1}`, bx + 250, by, { size: 12, a: 0.45 });
 
   // beat ruler under the stage
   const rx0 = SQ.x, rx1 = SQ.x + SQ.s, ry = 1016, total = 24;
@@ -566,7 +582,7 @@ function postParams(t, frame) {
 // Fast moves get more shutter samples so they blur as streaks.
 function fastMotion(t) {
   const w = [[TL.drums - 0.15, TL.drums + 0.3], [TL.B2 - 0.3, TL.B2 + 0.5], [TL.B3 - 0.4, TL.B3 + 0.1],
-    [TL.beat(10) - 0.02, TL.beat(10) + 0.5], [TL.B4 - 0.05, TL.B4 + 0.42], [TL.beat(15.2), TL.B5 + 0.72]];
+    [TL.beat(11) - 0.02, TL.beat(11) + 0.5], [TL.B4 - 0.05, TL.B4 + 0.42], [TL.beat(15.2), TL.B5 + 0.72]];
   if (headlines().some(h => t > h.t - 0.05 && t < h.t + 0.3)) return true;
   return w.some(([a, b]) => t >= a && t < b);
 }

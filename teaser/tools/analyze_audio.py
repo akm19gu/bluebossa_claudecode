@@ -64,12 +64,13 @@ def onsets(sig, thresh):
 
 bands = {"low": band(0, 160), "mid": band(300, 2500), "hi": band(3000, None)}
 
-# Attack of the first note (the file opens with two silent beats).
+# Attack of the first note (after ~1.3 s of silence at the head of the file).
 first = float(np.argmax(np.abs(y) > 0.02) / sr)
 
 # The groove sits a constant 66 ms behind the DAW grid (measured on the
-# half-note accents); 2 beats of pre-roll put the DAW downbeat at 2*T.
-g0 = 2 * T + 0.066
+# half-note accents). The file opens one beat before bar 1 (beat 4 of the
+# count-in), so bar 1's downbeat is at T; the tune's first chord is on beat 2.
+g0 = T + 0.066
 
 data = {
     "fps": FPS,
