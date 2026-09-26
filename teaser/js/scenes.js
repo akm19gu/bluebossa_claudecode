@@ -472,7 +472,7 @@ function st5(ctx, t) {
 function drawEvent(ctx, t) {
   const e = seg(t, TL.beat(18) + 0.3, TL.beat(18) + 0.9, E.outExpo);
   if (e <= 0) return;
-  const x0 = STAGE.x, x1 = STAGE.x + STAGE.s, y = STAGE.y + STAGE.s + 70;
+  const x0 = STAGE.x, x1 = STAGE.x + STAGE.s, y = STAGE.y + STAGE.s + 58; // clear of the beat ruler below
   ctx.save(); ctx.globalAlpha = e;
   ctx.fillStyle = INK; ctx.fillRect(x0, y - 38, STAGE.s * e, 1.2);
   ctx.textBaseline = 'alphabetic'; ctx.letterSpacing = '0.2px';
@@ -522,6 +522,19 @@ function drawHUD(ctx, t) {
   ctx.fillText('POST251', COL.x, 104);
   label(ctx, 'Teaser 01', COL.x + 96, 104, { size: 14, a: 0.5, weight: 400 });
   label(ctx, 'Blue Bossa', W - 120, 104, { size: 14, a: 0.5, weight: 400, align: 'right' });
+
+  // beat ruler under the stage: a tick per beat, taller on each bar, lighting
+  // up as the playhead passes
+  const rx0 = STAGE.x, rx1 = STAGE.x + STAGE.s, ry = 1018, total = 24;
+  const pos = (t - TL.g0) / TL.beatLen;
+  for (let b = 0; b < total; b++) {
+    const x = lerp(rx0, rx1, b / (total - 1));
+    const hot = t >= TL.beat(b) ? pulse(t, TL.beat(b), 0.22) : 0;
+    const h = b % 4 === 0 ? 14 : 7;
+    ctx.fillStyle = ink(pos >= b ? 0.55 + 0.45 * hot : 0.18);
+    ctx.fillRect(x - 0.75, ry - h / 2 - hot * 5, 1.5, h + hot * 10);
+  }
+  ctx.fillStyle = INK; ctx.fillRect(lerp(rx0, rx1, clamp(pos / (total - 1), 0, 1)) - 1, ry - 18, 2, 36);
   ctx.globalAlpha = 1; ctx.letterSpacing = '0px';
 }
 
