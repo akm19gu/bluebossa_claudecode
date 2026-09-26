@@ -24,8 +24,7 @@ async function boot() {
   const names = { unlit: 'logo_unlit', letters: 'letters', layerMid: 'layer_mid', layerKeys: 'layer_keys' };
   await Promise.all(Object.entries(names).map(async ([k, f]) => { A[k] = await loadImage(`assets/${f}.png`); }));
   const fonts = ['300 100px Inter', '400 20px Inter', '500 20px Inter', '600 100px Inter',
-    '500 100px "Cormorant Garamond"', 'italic 500 100px "Cormorant Garamond"',
-    '400 20px "JetBrains Mono"', '500 20px "JetBrains Mono"', '500 20px "Noto Sans JP"'];
+    '500 100px "Cormorant Garamond"', '500 20px "Noto Sans JP"'];
   await Promise.all(fonts.map(f => document.fonts.load(f, f.includes('Noto') ? '秋う' : 'Aa0♭')));
   await document.fonts.ready;
 

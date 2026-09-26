@@ -1,13 +1,14 @@
-// White, typographic layout: a manifesto column on the left, a square "stage"
-// on the right (the album-cover shape of the logo). The painting is the only
-// colour in the film.
+// White, typographic layout read top-left to bottom-right: the headline is the
+// way in, the square "stage" (the album-cover shape of the logo) sits lower
+// right, the statement text fills the lower left, and the event line closes the
+// frame at the bottom right. The painting is the only colour in the film.
 //
 //   0.00  count-in  "Post251"          stage: frame draws, "4"
 //   0.72  bar 1  Cm7   "Experimental digital jazz"   stage: the painted keys (acoustic); first chord on beat 2
-//   3.33  bar 2  Fm7   "Rhythm × Harmony"            stage: drunk feel vs. a straight grid, notes between the keys
+//   3.33  bar 2  Fm7   "Rhythm and harmony"          stage: drunk feel vs. a straight grid, notes between the keys
 //   5.94  bar 3  Dm7♭5 "Beyond convention"           stage: ii
 //   8.54  bar 4  G7    "ii – V – I"                  stage: V, then an empty slot for the I
-//  11.15  bar 5  Cm7   "Acoustic × Digital"          stage: the I lands late, is struck out, the logo takes its place
+//  11.15  bar 5  Cm7   "Acoustic and digital"        stage: the I lands late, is struck out, the logo takes its place
 //  12.46  (beat 3)     "Grooves"                     album, event
 //  13.76  bar 6  E♭m7  hold
 'use strict';
@@ -16,9 +17,16 @@ const A = {}; // images and logo metadata (filled by main.js)
 
 const PAPER = '#F4F3EF', INK = '#151515';
 const ink = a => `rgba(21,21,21,${a})`;
-const SQ = { x: 1080, y: 180, s: 720 };
+const SQ = { x: 1080, y: 180, s: 720 };   // stage drawing space
 SQ.cx = SQ.x + SQ.s / 2; SQ.cy = SQ.y + SQ.s / 2;
-const COL = { x: 120, w: 840 };
+const STAGE = { x: 1150, y: 258, s: 650 }; // where the stage sits on screen
+const COL = { x: 120, w: 780 };
+
+// Map the stage's drawing space onto its place on screen.
+function stageSpace(ctx) {
+  const k = STAGE.s / SQ.s;
+  ctx.translate(STAGE.x - SQ.x * k, STAGE.y - SQ.y * k); ctx.scale(k, k);
+}
 
 // ---------------------------------------------------------------- utilities
 function clipStage(ctx) { ctx.beginPath(); ctx.rect(SQ.x, SQ.y, SQ.s, SQ.s); ctx.clip(); }
@@ -28,8 +36,8 @@ function hair(ctx, x0, y0, x1, y1, a = 1, lw = 1) {
   ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
 }
 
-function mono(ctx, s, x, y, { size = 13, a = 0.55, align = 'left', track = 3, weight = 400 } = {}) {
-  ctx.font = `${weight} ${size}px "JetBrains Mono"`; ctx.letterSpacing = track + 'px';
+function label(ctx, s, x, y, { size = 13, a = 0.55, align = 'left', track = 0.3, weight = 500 } = {}) {
+  ctx.font = `${weight} ${size}px Inter`; ctx.letterSpacing = track + 'px';
   ctx.fillStyle = ink(a); ctx.textAlign = align; ctx.fillText(s, x, y);
   ctx.letterSpacing = '0px'; ctx.textAlign = 'left';
 }
@@ -51,9 +59,10 @@ function layerXf(cam, p, par) {
 function drawLogo(ctx, cam, vx, vy, { ign = null, par = 1, glowBoost = 0 } = {}) {
   ctx.save();
   ctx.imageSmoothingQuality = 'high';
+  const base = ctx.getTransform();
   logoLayers().forEach((L, i) => {
     const f = layerXf(cam, L.p, par);
-    ctx.setTransform(1, 0, 0, 1, vx, vy);
+    ctx.setTransform(base); ctx.translate(vx, vy);
     if (cam.rot) ctx.rotate(cam.rot);
     ctx.scale(f.z, f.z); ctx.translate(-f.cx, -f.cy);
     if (i > 0) { ctx.drawImage(L.img, 0, L.sy); return; }
@@ -126,26 +135,27 @@ function headlines() {
   return [
     { t: 0.03, lines: ['Post251'] },
     { t: TL.B1, lines: ['Experimental', 'digital jazz'] },
-    { t: TL.B2, lines: ['Rhythm ×', 'Harmony'] },
+    { t: TL.B2, lines: ['Rhythm and', 'harmony'] },
     { t: TL.B3, lines: ['Beyond', 'convention'] },
     { t: TL.B4, lines: ['ii – V – I'] },
-    { t: TL.B5, lines: ['Acoustic ×', 'Digital'] },
-    { t: TL.beat(18), lines: ['Grooves'], label: 'UPCOMING ALBUM' },
+    { t: TL.B5, lines: ['Acoustic and', 'digital'] },
+    { t: TL.beat(18), lines: ['Grooves'], label: 'Upcoming album' },
   ];
 }
 function drawHeadline(ctx, t) {
-  // The headline block is one slot two lines tall: the old block rolls up out
-  // of it while the new one rolls in from a full slot below, so they never meet.
+  // The headline block is one slot, two lines plus descenders tall: the old
+  // block rolls up out of it while the new one rolls in from a full slot below,
+  // so they never meet and nothing below the baseline is cut.
   const HL = headlines();
-  const size = 104, lh = 114, top = 318, slot = 2 * lh;
+  const size = 118, lh = 126, top = 322, slot = 2 * lh + Math.round(size * 0.34);
   let i = -1;
   HL.forEach((h, k) => { if (t >= h.t - 0.03) i = k; });
   if (i < 0) return;
   const cur = HL[i], prev = HL[i - 1];
   const p = seg(t, cur.t - 0.03, cur.t + 0.55, E.outExpo);
   ctx.save();
-  ctx.beginPath(); ctx.rect(COL.x - 10, top - size * 0.96, COL.w + 20, slot); ctx.clip();
-  ctx.font = `600 ${size}px Inter`; ctx.letterSpacing = '-4px'; ctx.fillStyle = INK; ctx.textBaseline = 'alphabetic';
+  ctx.beginPath(); ctx.rect(COL.x - 10, top - size * 0.96, STAGE.x - COL.x - 40, slot); ctx.clip();
+  ctx.font = `600 ${size}px Inter`; ctx.letterSpacing = '-4.5px'; ctx.fillStyle = INK; ctx.textBaseline = 'alphabetic';
   const block = (lines, dy) => lines.forEach((line, li) => ctx.fillText(line, COL.x - 5, top + li * lh + dy));
   if (prev && p < 1) block(prev.lines, -p * slot);
   block(cur.lines, (1 - p) * slot);
@@ -153,35 +163,34 @@ function drawHeadline(ctx, t) {
   if (cur.label) {
     const e = seg(t, cur.t, cur.t + 0.4, E.outExpo);
     ctx.save(); ctx.globalAlpha = e;
-    mono(ctx, cur.label, COL.x, top - size - 16 + (1 - e) * 10, { size: 14, a: 0.7, track: 5 });
+    label(ctx, cur.label, COL.x, top - size - 12 + (1 - e) * 10, { size: 20, a: 0.6, weight: 500 });
     ctx.restore();
   }
 }
 
 // -------------------------------------------------------------- manifesto
-// The whole text is laid out once so words never reflow; each phrase is typed
-// word by word inside its window and greys out when the next one starts.
-// Words prefixed with * are set in the semibold.
+// The whole text is laid out once so words never reflow. Each phrase fades in
+// just after its downbeat (the eye takes the headline and the stage first) and
+// greys out when the next one arrives. Words prefixed with * are semibold.
 function phrases() {
   return [
-    [0.06, 0.62, '*Post251 is an experimental digital jazz unit'],
-    [TL.B1, TL.B1 + 2.1, 'formed by drummer and composer *Nakam and composer *Shunya *Ishikawa *(Pami).'],
-    [TL.B2, TL.B2 + 1.3, 'From the perspectives of *rhythm and *harmony,'],
-    [TL.B3, TL.B3 + 1.7, 'we aim to move beyond broadly applied conventions in music,'],
-    [TL.B4, TL.B4 + 1.3, 'including the *ii–V–I progression.'],
-    [TL.B5, TL.B5 + 1.15, 'Crossing the boundary between *acoustic and *digital sound, we explore new possibilities for music.'],
-    [TL.beat(18), TL.beat(18) + 1.15, 'In the upcoming album *‘Grooves’, we pursue *microtonal *harmony and *dilla *(drunk) *feel in a practical way in jazz ground.'],
+    [0.06, '*Post251 is an experimental digital jazz unit'],
+    [TL.B1, 'formed by drummer and composer *Nakam.'],
+    [TL.B2, 'From the perspectives of *rhythm and *harmony,'],
+    [TL.B3, 'we aim to move beyond broadly applied conventions in music,'],
+    [TL.B4, 'including the *ii–V–I progression.'],
+    [TL.B5, 'Crossing the boundary between *acoustic and *digital sound, we explore new possibilities for music.'],
+    [TL.beat(18), 'In the upcoming album *‘Grooves’, we pursue *microtonal *harmony and *dilla *(drunk) *feel in a practical way in jazz ground.'],
   ];
 }
 let _para = null;
 function layoutPara(ctx) {
-  const size = 21, lh = 33, sp = 5.6;
+  const size = 22, lh = 35, sp = 5.9;
   const words = [];
-  phrases().forEach(([t0, t1, text], pi) => {
-    const ws = text.split(' ');
-    ws.forEach((w, j) => {
+  phrases().forEach(([t0, text], pi) => {
+    text.split(' ').forEach(w => {
       const bold = w.startsWith('*');
-      words.push({ s: bold ? w.slice(1) : w, bold, pi, t: t0 + (t1 - t0) * j / ws.length });
+      words.push({ s: bold ? w.slice(1) : w, bold, pi, t: t0 + (pi ? 0.14 : 0) });
     });
   });
   let x = 0, line = 0;
@@ -191,44 +200,22 @@ function layoutPara(ctx) {
     if (x > 0 && x + w.w > COL.w) { x = 0; line++; }
     w.x = x; w.line = line; x += w.w + sp;
   }
-  _para = { words, size, lh, top: 560 };
+  _para = { words, size, lh, top: 590 };
 }
 function drawPara(ctx, t) {
   if (!_para) layoutPara(ctx);
   const P = _para, starts = phrases().map(p => p[0]);
   ctx.save(); ctx.textBaseline = 'alphabetic'; ctx.letterSpacing = '0px';
   for (const w of P.words) {
-    const e = seg(t, w.t, w.t + 0.16, E.outCubic);
+    const e = seg(t, w.t, w.t + 0.45, E.outCubic);
     if (e <= 0) continue;
     const nextStart = starts[w.pi + 1];
     const past = nextStart === undefined ? 0 : seg(t, nextStart, nextStart + 0.35);
     const c = Math.round(lerp(21, 150, past));
     ctx.font = `${w.bold ? 600 : 400} ${P.size}px Inter`;
     ctx.fillStyle = `rgba(${c},${c - 3},${c - 8},${e})`;
-    ctx.fillText(w.s, COL.x + w.x, P.top + w.line * P.lh + (1 - e) * 8);
+    ctx.fillText(w.s, COL.x + w.x, P.top + w.line * P.lh + (1 - e) * 10);
   }
-  ctx.restore();
-}
-
-// ----------------------------------------------------------------- credits
-function drawCredits(ctx, t) {
-  const y = SQ.y + SQ.s + 46;
-  const cols = [[SQ.x, 'NAKAM', 'Drums, Composition', TL.B1]];
-  ctx.save();
-  cols.forEach(([x, name, role, ta], i) => {
-    const e = seg(t, ta, ta + 0.45, E.outExpo);
-    if (e <= 0) return;
-    ctx.globalAlpha = e;
-    ctx.font = '600 14px Inter'; ctx.letterSpacing = '2.5px'; ctx.fillStyle = INK;
-    ctx.fillText(name, x + (1 - e) * 20, y);
-    ctx.font = '400 14px Inter'; ctx.letterSpacing = '0.2px'; ctx.fillStyle = ink(0.55);
-    ctx.fillText(role, x + (1 - e) * 20, y + 22);
-    if (i === 0) { // the drummer's line draws as the drums come in
-      const d = seg(t, TL.drums - 0.02, TL.drums + 0.35, E.outExpo);
-      ctx.fillStyle = INK; ctx.fillRect(x, y + 34, 150 * d, 2);
-    }
-  });
-  ctx.letterSpacing = '0px';
   ctx.restore();
 }
 
@@ -312,8 +299,8 @@ function st2(ctx, t) {
   const sc = (1 - ex) * lerp(0.92, 1, ent), la = 0.6 * ent * (1 - ex);
   const draw = seg(t, t0, t0 + 0.5, E.outCubic);
   ctx.save(); clipStage(ctx);
-  mono(ctx, 'DILLA (DRUNK) FEEL', SQ.x + 24, SQ.y + 40, { size: 12, a: la });
-  mono(ctx, 'MICROTONAL HARMONY', SQ.x + 24, SQ.cy + 40, { size: 12, a: la });
+  label(ctx, 'Dilla (drunk) feel', SQ.x + 24, SQ.y + 44, { size: 18, a: 1.3 * la });
+  label(ctx, 'Microtonal harmony', SQ.x + 24, SQ.cy + 44, { size: 18, a: 1.3 * la });
   hair(ctx, SQ.x + 24, SQ.cy, SQ.x + 24 + (SQ.s - 48) * draw, SQ.cy, 0.15 * (1 - ex));
   ctx.translate(SQ.cx, SQ.cy); ctx.scale(sc, sc); ctx.rotate(ex * 2.2); ctx.translate(-SQ.cx, -SQ.cy);
   const X0 = SQ.x + 70, X1 = SQ.x + SQ.s - 50, sw = (X1 - X0) / 16;
@@ -323,15 +310,15 @@ function st2(ctx, t) {
   for (let i = 0; i <= 16; i++) {
     const x = X0 + i * sw, q = i % 4 === 0;
     hair(ctx, x, yS - 24, x, lerp(yS - 24, yD + 24, draw), q ? 0.32 : 0.1);
-    if (q && i < 16) mono(ctx, String(i / 4 + 1), x + 5, yS - 32, { size: 11, a: 0.5 * draw, track: 0 });
+    if (q && i < 16) label(ctx, String(i / 4 + 1), x + 5, yS - 32, { size: 13, a: 0.5 * draw, weight: 400 });
   }
-  [['STRAIGHT', yS], ['DRUNK', yD]].forEach(([s, y]) => { // row names, set vertically in the margin
-    ctx.save(); ctx.translate(SQ.x + 42, y); ctx.rotate(-Math.PI / 2);
-    mono(ctx, s, 0, 0, { size: 10, a: 0.45 * draw, track: 2, align: 'center' }); ctx.restore();
+  [['straight', yS], ['drunk', yD]].forEach(([s, y]) => { // row names, set vertically in the margin
+    ctx.save(); ctx.translate(SQ.x + 44, y); ctx.rotate(-Math.PI / 2);
+    label(ctx, s, 0, 0, { size: 13, a: 0.5 * draw, align: 'center', weight: 400 }); ctx.restore();
   });
   const ph = (t - t0) / (4 * TL.beatLen);
   if (ph >= 0 && ph <= 1) { const px = X0 + ph * (X1 - X0); hair(ctx, px, yS - 30, px, yD + 30, 0.85, 1.5); }
-  for (const [st, ms, w, label] of DRUNK) {
+  for (const [st, ms, w, tag] of DRUNK) {
     const xs = X0 + st * sw, xd = xs + ms / 1000 / step * sw;
     const ts = t0 + st * step, td = ts + ms / 1000;
     const ps = E.outBack(clamp((t - ts) / 0.16)), pd = E.outBack(clamp((t - td) / 0.16));
@@ -343,7 +330,7 @@ function st2(ctx, t) {
     if (pd > 0) {
       hair(ctx, xs, yS + r, lerp(xs, xd, clamp(pd)), lerp(yS + r, yD - r, clamp(pd)), 0.45, 1);
       ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(xd, yD, Math.max(0.1, r * pd), 0, Math.PI * 2); ctx.fill();
-      if (label) mono(ctx, `${ms > 0 ? '+' : '−'}${Math.abs(ms)}ms`, xd + 2, yD + 26, { size: 10, a: 0.6 * clamp(pd), track: 0, align: 'center' });
+      if (tag) label(ctx, `${ms > 0 ? '+' : '−'}${Math.abs(ms)} ms`, xd + 2, yD + 30, { size: 13, a: 0.6 * clamp(pd), align: 'center', weight: 400 });
     }
   }
 
@@ -375,8 +362,8 @@ function st2(ctx, t) {
   if (!onKey) { ctx.save(); ctx.setLineDash([4, 4]); hair(ctx, mx, ry, mx, k1, 0.9, 1.5); ctx.restore(); }
   ctx.fillStyle = INK;
   ctx.beginPath(); ctx.moveTo(mx - 7, ry - 26); ctx.lineTo(mx + 7, ry - 26); ctx.lineTo(mx, ry - 15); ctx.closePath(); ctx.fill();
-  ctx.font = '500 14px "JetBrains Mono"'; ctx.fillStyle = ink(ent);
-  textFlat(ctx, MICRO[bi][1], clamp(mx, SQ.x + 90, SQ.x + SQ.s - 90), ry - 36, 14, { align: 'center' });
+  ctx.font = '500 17px Inter'; ctx.fillStyle = ink(ent);
+  textFlat(ctx, MICRO[bi][1], clamp(mx, SQ.x + 90, SQ.x + SQ.s - 90), ry - 36, 17, { align: 'center' });
   ctx.restore();
   if (ex > 0.85) { ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(SQ.cx, SQ.cy, 5, 0, Math.PI * 2); ctx.fill(); }
 }
@@ -386,9 +373,8 @@ function numeral(ctx, s, x, y, size, a = 1) {
   ctx.font = `500 ${size}px "Cormorant Garamond"`; ctx.textAlign = 'center'; ctx.fillStyle = ink(a);
   ctx.fillText(s, x, y); ctx.textAlign = 'left';
 }
-function stageLabels(ctx, top, chord, a) {
+function stageChord(ctx, chord, a) {
   if (a <= 0.001) return;
-  mono(ctx, top, SQ.x + 24, SQ.y + 40, { size: 12, a: 0.6 * a });
   ctx.save(); ctx.fillStyle = ink(a); drawChord(ctx, chord, SQ.x + 24, SQ.y + SQ.s - 28, 30, { family: 'Inter', weight: 600 }); ctx.restore();
 }
 
@@ -398,7 +384,7 @@ function st3(ctx, t) {
   const e = seg(t, t0, t0 + 0.55, E.outExpo);
   const out = seg(t, TL.B4 - 0.01, TL.B4 + 0.42, E.outExpo);
   ctx.save(); clipStage(ctx);
-  stageLabels(ctx, 'ii — SUPERTONIC', 'Dm7♭5', e * (1 - out));
+  stageChord(ctx, 'Dm7♭5', e * (1 - out));
   const sl = seg(t, hit - 0.01, hit + 0.5), slices = 9, base = SQ.cy + 190;
   const x = SQ.cx - out * SQ.s;
   for (let i = 0; i < slices; i++) {
@@ -417,7 +403,7 @@ function st4(ctx, t) {
   const inn = seg(t, t0 - 0.01, t0 + 0.42, E.outExpo);
   const shrink = seg(t, TL.beat(15.2), TL.beat(15.9), E.inOutCubic);
   ctx.save(); clipStage(ctx);
-  stageLabels(ctx, 'V — DOMINANT', 'G7', inn);
+  stageChord(ctx, 'G7', inn);
   const pp = 0.04 * ((t >= h1 ? pulse(t, h1, 0.14) : 0) + (t >= h2 ? pulse(t, h2, 0.14) : 0));
   const size = lerp(600, 330, shrink) * (1 + pp);
   const x = lerp(SQ.cx + (1 - inn) * SQ.s, SQ.x + 190, shrink), y = lerp(SQ.cy + 190, SQ.cy + 110, shrink);
@@ -428,7 +414,6 @@ function st4(ctx, t) {
     const on = Math.floor((t - TL.beat(15.6)) / (TL.beatLen / 2)) % 2 === 0;
     ctx.save(); ctx.setLineDash([10, 8]); ctx.strokeStyle = ink(slot * (on ? 1 : 0.3)); ctx.lineWidth = 1.5;
     ctx.strokeRect(bx, by + bh * (1 - slot), bw, bh * slot); ctx.restore();
-    mono(ctx, 'I ?', bx + 12, by + bh + 34, { size: 13, a: 0.6 * slot });
   }
   ctx.restore();
 }
@@ -461,7 +446,7 @@ function st5(ctx, t) {
     numeral(ctx, 'I', 0, 0, 330); ctx.restore();
     const s = seg(t, strike, strike + 0.08, E.outCubic);
     if (s > 0) { ctx.save(); ctx.fillStyle = INK; ctx.translate(SQ.x + 510, SQ.cy - 10); ctx.rotate(-0.35); ctx.fillRect(-150, -3, 300 * s, 6); ctx.restore(); }
-    mono(ctx, 'DRUNK +70 MS', SQ.x + 412, SQ.cy + 190, { size: 12, a: 0.6 * seg(t, late, late + 0.1) });
+    label(ctx, '+70 ms', SQ.x + 510, SQ.cy + 196, { size: 16, a: 0.6 * seg(t, late, late + 0.1), align: 'center', weight: 400 });
     ctx.globalAlpha = 1;
   }
   const w = seg(t, wipe0, wipe1, E.inOutCubic);
@@ -487,19 +472,19 @@ function st5(ctx, t) {
 function drawEvent(ctx, t) {
   const e = seg(t, TL.beat(18) + 0.3, TL.beat(18) + 0.9, E.outExpo);
   if (e <= 0) return;
-  const y = 918;
+  const x0 = STAGE.x, x1 = STAGE.x + STAGE.s, y = STAGE.y + STAGE.s + 70;
   ctx.save(); ctx.globalAlpha = e;
-  ctx.fillStyle = INK; ctx.fillRect(COL.x, y - 44, COL.w * e, 1.2);
-  ctx.textBaseline = 'alphabetic'; ctx.letterSpacing = '0.5px';
-  let x = COL.x;
-  const put = (s, font, color, gap = 26) => { ctx.font = font; ctx.fillStyle = color; ctx.fillText(s, x, y); x += ctx.measureText(s).width + gap; };
-  put('M3-2026', '600 22px Inter', INK, 4);
-  put('秋', '500 22px "Noto Sans JP"', INK);
-  put('2026.10.25 SUN', '500 20px "JetBrains Mono"', ink(0.75));
-  put('う', '500 20px "Noto Sans JP"', ink(0.75), 2);
-  put('-01b', '500 20px "JetBrains Mono"', ink(0.75));
-  ctx.textAlign = 'right'; ctx.font = '500 20px "JetBrains Mono"'; ctx.fillStyle = INK;
-  ctx.fillText('post251.com', COL.x + COL.w, y);
+  ctx.fillStyle = INK; ctx.fillRect(x0, y - 38, STAGE.s * e, 1.2);
+  ctx.textBaseline = 'alphabetic'; ctx.letterSpacing = '0.2px';
+  let x = x0;
+  const put = (s, font, color, gap = 22) => { ctx.font = font; ctx.fillStyle = color; ctx.fillText(s, x, y); x += ctx.measureText(s).width + gap; };
+  put('M3-2026', '600 20px Inter', INK, 3);
+  put('秋', '500 20px "Noto Sans JP"', INK);
+  put('2026.10.25 SUN', '500 18px Inter', ink(0.7));
+  put('う', '500 18px "Noto Sans JP"', ink(0.7), 1);
+  put('-01b', '500 18px Inter', ink(0.7));
+  ctx.textAlign = 'right'; ctx.font = '600 18px Inter'; ctx.fillStyle = INK;
+  ctx.fillText('post251.com', x1, y);
   ctx.restore();
 }
 
@@ -510,6 +495,7 @@ function drawScene(ctx, t) {
   ctx.letterSpacing = '0px'; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic'; ctx.setLineDash([]);
   ctx.fillStyle = PAPER; ctx.fillRect(0, 0, W, H);
 
+  ctx.save(); stageSpace(ctx);
   if (t < TL.B1) st0(ctx, t);
   else if (t < TL.B2) st1(ctx, t);
   else if (t < TL.B3) st2(ctx, t);
@@ -518,10 +504,10 @@ function drawScene(ctx, t) {
   else st5(ctx, t);
   if (t > TL.B2 - 0.3 && t < TL.B2 + 0.45) keyWipe(ctx, t, TL.B2, { x: SQ.x, y: SQ.y, w: SQ.s, h: SQ.s });
   drawFrame(ctx, t);
+  ctx.restore();
 
   drawHeadline(ctx, t);
   drawPara(ctx, t);
-  drawCredits(ctx, t);
   drawEvent(ctx, t);
 }
 
@@ -532,43 +518,10 @@ function drawHUD(ctx, t) {
   const vis = seg(t, 0.02, 0.3, E.outCubic);
   if (vis <= 0) return;
   ctx.globalAlpha = vis; ctx.textBaseline = 'alphabetic';
-  ctx.font = '600 13px Inter'; ctx.letterSpacing = '3px'; ctx.fillStyle = INK;
-  ctx.fillText('POST251', COL.x, 100);
-  ctx.font = '400 13px Inter'; ctx.fillStyle = ink(0.5);
-  ctx.fillText('TEASER 01', COL.x + 92, 100);
-  mono(ctx, 'BLUE BOSSA  ·  92 BPM  ·  4/4  ·  C MINOR', W - 120, 100, { size: 12, a: 0.5, align: 'right', track: 2 });
-  const f = Math.round(t * FPS);
-  mono(ctx, `00:00:${String(Math.floor(f / FPS)).padStart(2, '0')}:${String(f % FPS).padStart(2, '0')}`, W - 120, 122, { size: 12, a: 0.38, align: 'right', track: 2 });
-
-  // chord with a slot roll
-  let ci = -1;
-  TL.chords.forEach((c, i) => { if (t >= c.t - 0.02) ci = i; });
-  const bx = COL.x, by = 1022;
-  if (ci >= 0) {
-    const c = TL.chords[ci], pr = TL.chords[ci - 1];
-    const e = seg(t, c.t - 0.02, c.t + 0.28, E.outExpo);
-    ctx.save(); ctx.beginPath(); ctx.rect(bx - 6, by - 36, 240, 48); ctx.clip();
-    if (pr && e < 1) { ctx.fillStyle = ink(1 - e); drawChord(ctx, pr.sym, bx, by - e * 44, 26, { family: 'Inter', weight: 600 }); }
-    ctx.fillStyle = ink(e);
-    const cw = drawChord(ctx, c.sym, bx, by + (1 - e) * 44, 26, { family: 'Inter', weight: 600 });
-    ctx.font = 'italic 500 26px "Cormorant Garamond"'; ctx.fillStyle = ink(0.6 * e);
-    textFlat(ctx, c.fn, bx + cw + 16, by + (1 - e) * 44, 26);
-    ctx.restore();
-  }
-  const bi = Math.floor((t - TL.g0) / TL.beatLen + 1e-6);
-  mono(ctx, t < TL.B1 ? 'COUNT-IN' : `BAR ${String(Math.floor(bi / 4) + 1).padStart(2, '0')} · ${((bi % 4) + 4) % 4 + 1}`, bx + 250, by, { size: 12, a: 0.45 });
-
-  // beat ruler under the stage
-  const rx0 = SQ.x, rx1 = SQ.x + SQ.s, ry = 1016, total = 24;
-  const pos = (t - TL.g0) / TL.beatLen;
-  for (let b = 0; b < total; b++) {
-    const x = lerp(rx0, rx1, b / (total - 1));
-    const hot = t >= TL.beat(b) ? pulse(t, TL.beat(b), 0.22) : 0;
-    const h = b % 4 === 0 ? 14 : 7;
-    ctx.fillStyle = ink(pos >= b ? 0.55 + 0.45 * hot : 0.18);
-    ctx.fillRect(x - 0.75, ry - h / 2 - hot * 5, 1.5, h + hot * 10);
-  }
-  ctx.fillStyle = INK; ctx.fillRect(lerp(rx0, rx1, clamp(pos / (total - 1), 0, 1)) - 1, ry - 18, 2, 36);
+  ctx.font = '600 14px Inter'; ctx.letterSpacing = '3px'; ctx.fillStyle = INK;
+  ctx.fillText('POST251', COL.x, 104);
+  label(ctx, 'Teaser 01', COL.x + 96, 104, { size: 14, a: 0.5, weight: 400 });
+  label(ctx, 'Blue Bossa', W - 120, 104, { size: 14, a: 0.5, weight: 400, align: 'right' });
   ctx.globalAlpha = 1; ctx.letterSpacing = '0px';
 }
 

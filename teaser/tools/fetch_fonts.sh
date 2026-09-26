@@ -6,14 +6,13 @@ cd "$(dirname "$0")/.."
 JP_CHARS="${JP_CHARS:-秋う}"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
-(cd "$TMP" && npm init -y >/dev/null && npm install --silent @fontsource/inter @fontsource/cormorant-garamond @fontsource/jetbrains-mono @fontsource/noto-sans-jp)
+(cd "$TMP" && npm init -y >/dev/null && npm install --silent @fontsource/inter @fontsource/cormorant-garamond @fontsource/noto-sans-jp)
 FS="$TMP/node_modules/@fontsource"
 D=assets/fonts
 mkdir -p "$D/licenses"
-cp "$FS"/inter/files/inter-latin-{300,400,500,600,700}-normal.woff2 "$D/"
-cp "$FS"/cormorant-garamond/files/cormorant-garamond-latin-500-{normal,italic}.woff2 "$D/"
-cp "$FS"/jetbrains-mono/files/jetbrains-mono-latin-{400,500}-normal.woff2 "$D/"
-for f in inter cormorant-garamond jetbrains-mono noto-sans-jp; do cp "$FS/$f/LICENSE" "$D/licenses/$f-OFL.txt"; done
+cp "$FS"/inter/files/inter-latin-{300,400,500,600}-normal.woff2 "$D/"
+cp "$FS"/cormorant-garamond/files/cormorant-garamond-latin-500-normal.woff2 "$D/"
+for f in inter cormorant-garamond noto-sans-jp; do cp "$FS/$f/LICENSE" "$D/licenses/$f-OFL.txt"; done
 FS="$FS" JP_CHARS="$JP_CHARS" python3 - <<'EOF'
 import os, re, shutil
 fs, chars = os.environ["FS"] + "/noto-sans-jp", set(os.environ["JP_CHARS"])
